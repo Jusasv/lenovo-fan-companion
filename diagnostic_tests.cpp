@@ -11,6 +11,11 @@ int main() {
         if (!condition) { std::cerr << "FAIL: " << name << '\n'; ++failures; }
     };
     using namespace companion;
+    check(absolute_temperature_name(L"CPU Package"), "CPU package is an absolute temperature");
+    check(absolute_temperature_name(L"CPU Core #1"), "CPU core is an absolute temperature");
+    check(!absolute_temperature_name(L"CPU Core #1 Distance to TjMax"), "thermal headroom is not temperature");
+    check(!absolute_temperature_name(L"DISTANCE TO TJMAX"), "relative sensor exclusion is case insensitive");
+    check(!absolute_temperature_name(L""), "unnamed monitor temperature remains unverified");
     check(vpc_hardware_ids(L"ACPI\\VEN_VPC&DEV_2004"), "unnamed Lenovo device vendor identifier");
     check(vpc_hardware_ids(L"ACPI\\VPC2004"), "legacy Lenovo identifier");
     check(vpc_hardware_ids(L"*VPC2004"), "wildcard Lenovo identifier");
