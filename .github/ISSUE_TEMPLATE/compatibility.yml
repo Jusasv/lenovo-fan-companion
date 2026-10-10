@@ -1,0 +1,46 @@
+name: Compatibility report
+description: Report model-specific driver availability or fan behavior.
+title: "[Compatibility] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hardware support is under investigation. Do not include serial numbers, credentials, full system dumps, or firmware dumps. A report does not establish support.
+  - type: input
+    id: model
+    attributes:
+      label: Exact laptop model
+      placeholder: "For example: IdeaPad Y700-15ISK"
+    validations:
+      required: true
+  - type: input
+    id: bios
+    attributes:
+      label: BIOS version
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+  - type: input
+    id: driver
+    attributes:
+      label: Relevant Lenovo driver name and version
+  - type: textarea
+    id: baseline
+    attributes:
+      label: Behavior under ordinary firmware Auto
+      description: Include idle and load observations; identify the source of any temperature or RPM measurements.
+    validations:
+      required: true
+  - type: textarea
+    id: tested
+    attributes:
+      label: Tested application/version and observed behavior
+      description: Specify the mode, cycling interval if any, and whether the behavior is audible or measured. Do not guess RPM percentages.
+    validations:
+      required: true
+  - type: textarea
+    id: recovery
+    attributes:
+      label: Recovery behavior
+      description: If already observed, describe exit or sleep/resume behavior. Do not perform new experiments just to fill this field.
