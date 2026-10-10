@@ -4,7 +4,7 @@ A lightweight Windows fan-control project for supported Lenovo laptops.
 
 **Status: diagnostic preview in development. Fan control is not implemented; hardware support is under investigation.**
 
-The first native Windows app inspects the Lenovo virtual power driver and available CPU/GPU temperature sources without sending fan commands. See [DIAGNOSTICS.md](DIAGNOSTICS.md) for build instructions and limitations. Local compilation and 20 diagnostic-rule checks passed; runtime testing on the target laptop is still pending.
+The first native Windows app inspects the Lenovo virtual power driver and available CPU/GPU temperature sources without sending fan commands. See [DIAGNOSTICS.md](DIAGNOSTICS.md) for download/build instructions and limitations. Windows and Linux checks pass, including 20 diagnostic-rule checks and a Windows report smoke test. The report also ran locally; driver and sensor availability still need to be established before fan control can be implemented.
 
 The initial test target is the Lenovo IdeaPad Y700. The name leaves room for other models; it does not imply universal Lenovo compatibility.
 
