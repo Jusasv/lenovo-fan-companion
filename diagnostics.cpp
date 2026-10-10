@@ -25,7 +25,7 @@ constexpr int Refresh = 101, Copy = 102, Save = 103;
 
 struct SensorResult {
     std::optional<double> cpu, gpu;
-    std::wstring gpuSource, monitorStatus, nvmlStatus;
+    std::wstring gpuSource, monitorStatus, nvmlStatus, nvapiStatus;
 };
 struct ScanResult {
     std::wstring text, laptop, driverStatus, endpointStatus;
@@ -272,6 +272,80 @@ void inspect_nvml(SensorResult& sensors) {
         L"NVML device enumeration failed (code " + std::to_wstring(enumeration) + L")";
 }
 
+void inspect_nvapi(SensorResult& sensors) {
+    if (sensors.gpu && sensors.gpuSource.find(L"NVML") != std::wstring::npos) {
+        sensors.nvapiStatus = L"Not queried; NVML provided GPU temperature";
+        return;
+    }
+    wchar_t system[MAX_PATH]{};
+    if (!GetSystemDirectoryW(system, MAX_PATH)) {
+        sensors.nvapiStatus = L"Windows system directory unavailable";
+        return;
+    }
+    const auto path = std::wstring(system) + L"\\nvapi64.dll";
+    HMODULE library = LoadLibraryExW(path.c_str(), nullptr,
+        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (!library) {
+        sensors.nvapiStatus = L"Installed NVIDIA NVAPI library unavailable";
+        return;
+    }
+    // Documented NVIDIA NVAPI V2 thermal ABI. Query only; no cooling setters.
+    struct ThermalSensor { int controller, minimum, maximum, current, target; };
+    struct ThermalSettings { unsigned version, count; ThermalSensor sensor[3]; };
+    static_assert(sizeof(ThermalSettings) == 68, "NVIDIA thermal ABI size");
+    using Query = void* (__cdecl*)(unsigned);
+    using Initialize = int(__cdecl*)();
+    using Enumerate = int(__cdecl*)(void**, unsigned*);
+    using ReadThermal = int(__cdecl*)(void*, unsigned, ThermalSettings*);
+    const auto query = library_function<Query>(library, "nvapi_QueryInterface");
+    Initialize initialize = nullptr, unload = nullptr;
+    Enumerate enumerate = nullptr;
+    ReadThermal thermal = nullptr;
+    // Copy exported pointers into typed function pointers, matching library_function.
+    auto resolve = [&](auto& target, unsigned identifier) {
+        if (query) { const auto address = query(identifier); std::memcpy(&target, &address, sizeof(target)); }
+    };
+    resolve(initialize, 0x0150e828u);
+    resolve(unload, 0xd22bdd7eu);
+    resolve(enumerate, 0xe5ac921fu);
+    resolve(thermal, 0xe3640a56u);
+    if (!initialize || !unload || !enumerate || !thermal) {
+        sensors.nvapiStatus = L"Required NVIDIA NVAPI interface unavailable";
+        FreeLibrary(library);
+        return;
+    }
+    const int initialized = initialize();
+    if (initialized != 0) {
+        sensors.nvapiStatus = L"NVAPI initialization failed (code " + std::to_wstring(initialized) + L")";
+        FreeLibrary(library);
+        return;
+    }
+    void* handles[64]{};
+    unsigned count = 0;
+    const int enumerated = enumerate(handles, &count);
+    std::optional<double> hottest;
+    if (enumerated == 0) {
+        for (unsigned index = 0; index < (std::min)(count, 64u); ++index) {
+            ThermalSettings settings{};
+            settings.version = static_cast<unsigned>(sizeof(settings)) | (2u << 16);
+            if (thermal(handles[index], 15u, &settings) != 0) continue;
+            for (unsigned sensor = 0; sensor < (std::min)(settings.count, 3u); ++sensor) {
+                // GPU core only: board, memory and power temperatures are distinct.
+                if (settings.sensor[sensor].target == 1)
+                    companion::take_hottest(hottest, settings.sensor[sensor].current);
+            }
+        }
+    }
+    unload();
+    FreeLibrary(library);
+    if (hottest) {
+        sensors.gpu = hottest;
+        sensors.gpuSource = L"NVIDIA NVAPI (hottest accessible GPU core)";
+        sensors.nvapiStatus = L"Temperature read successfully";
+    } else sensors.nvapiStatus = enumerated == 0 ? L"No valid GPU core temperature returned" :
+        L"NVAPI device enumeration failed (code " + std::to_wstring(enumerated) + L")";
+}
+
 std::wstring temperature_text(const std::optional<double>& value) {
     if (!value) return L"Unavailable";
     std::wostringstream out;
@@ -309,12 +383,14 @@ ScanResult collect() {
         << L"Endpoint: " << result.endpointStatus << L"\r\nFan-control support: unverified\r\n\r\n";
     inspect_monitor(result.sensors);
     inspect_nvml(result.sensors);
+    inspect_nvapi(result.sensors);
     out << L"TEMPERATURE SNAPSHOT\r\nCPU: " << temperature_text(result.sensors.cpu)
         << L"\r\nCPU source: " << (result.sensors.cpu ? L"Existing LibreHardwareMonitor provider (hottest CPU sensor)" : L"None available")
         << L"\r\nGPU: " << temperature_text(result.sensors.gpu)
         << L"\r\nGPU source: " << (result.sensors.gpuSource.empty() ? L"None available" : result.sensors.gpuSource)
         << L"\r\nMonitor provider: " << result.sensors.monitorStatus
-        << L"\r\nNVIDIA provider: " << result.sensors.nvmlStatus
+        << L"\r\nNVIDIA NVML provider: " << result.sensors.nvmlStatus
+        << L"\r\nNVIDIA NVAPI provider: " << result.sensors.nvapiStatus
         << L"\r\nSnapshot only; existing monitor freshness is not verified.\r\n"
         << L"ACPI thermal zones are not treated as CPU temperature.\r\n\r\n"
         << L"COOLING\r\nQuiet / Balanced / Gaming profiles: not implemented in this diagnostic build.\r\n"
