@@ -1,0 +1,40 @@
+name: Build diagnostics
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure native application
+        run: cmake -S . -B build -A x64
+      - name: Compile with warnings as errors
+        run: cmake --build build --config Release
+      - name: Test diagnostic interpretation
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Exercise read-only report path
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath ./build/Release/LenovoFanCompanion.exe -ArgumentList @('--report', 'runner-diagnostics.txt') -WindowStyle Hidden -PassThru
+          if (-not $process.WaitForExit(120000)) { $process.Kill(); throw 'Diagnostic scan timed out' }
+          if ($process.ExitCode -ne 0) { throw 'Diagnostic report failed' }
+          $text = Get-Content runner-diagnostics.txt -Raw
+          if ($text -notmatch 'No fan commands were sent' -or $text -notmatch 'Fan-control support: unverified') { throw 'Report failed validation' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LenovoFanCompanion-diagnostics-windows-x64
+          path: |
+            build/Release/LenovoFanCompanion.exe
+            LICENSE
+            DIAGNOSTICS.md
+  portable-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build
+      - run: cmake --build build
+      - run: ctest --test-dir build --output-on-failure
