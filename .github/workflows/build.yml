@@ -9,7 +9,7 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Configure native application
         run: cmake -S . -B build -A x64
       - name: Compile with warnings as errors
@@ -24,17 +24,20 @@ jobs:
           if ($process.ExitCode -ne 0) { throw 'Diagnostic report failed' }
           $text = Get-Content runner-diagnostics.txt -Raw
           if ($text -notmatch 'No fan commands were sent' -or $text -notmatch 'Fan-control support: unverified') { throw 'Report failed validation' }
-      - uses: actions/upload-artifact@v4
+      - name: Package diagnostic preview
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path preview | Out-Null
+          Copy-Item build/Release/LenovoFanCompanion.exe, LICENSE, DIAGNOSTICS.md -Destination preview
+      - uses: actions/upload-artifact@v7
         with:
           name: LenovoFanCompanion-diagnostics-windows-x64
-          path: |
-            build/Release/LenovoFanCompanion.exe
-            LICENSE
-            DIAGNOSTICS.md
+          path: preview/
+          if-no-files-found: error
   portable-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: cmake -S . -B build
       - run: cmake --build build
       - run: ctest --test-dir build --output-on-failure
