@@ -26,6 +26,13 @@ inline std::optional<double> temperature(double value) {
 }
 
 enum class SensorKind { Other, Cpu, Gpu };
+inline bool absolute_temperature_name(std::wstring_view name) {
+    if (name.empty()) return false;
+    std::wstring lower(name);
+    for (auto& character : lower) character = static_cast<wchar_t>(std::towlower(character));
+    return lower.find(L"distance") == std::wstring::npos && lower.find(L"tjmax") == std::wstring::npos;
+}
+
 inline SensorKind sensor_kind(std::wstring_view identifier) {
     // Only identifiers from explicitly queried monitor temperature sensors qualify.
     if (identifier.rfind(L"/intelcpu/", 0) == 0 || identifier.rfind(L"/amdcpu/", 0) == 0)
