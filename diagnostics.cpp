@@ -167,7 +167,7 @@ void inspect_monitor(SensorResult& sensors) {
         nullptr, RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, nullptr, EOAC_NONE);
     if (SUCCEEDED(result)) {
         BSTR language = SysAllocString(L"WQL");
-        BSTR query = SysAllocString(L"SELECT Identifier, Value FROM Sensor WHERE SensorType = 'Temperature'");
+        BSTR query = SysAllocString(L"SELECT Identifier, Name, Value FROM Sensor WHERE SensorType = 'Temperature'");
         if (!language || !query) result = E_OUTOFMEMORY;
         else result = services->ExecQuery(language, query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
             nullptr, &rows);
@@ -188,7 +188,9 @@ void inspect_monitor(SensorResult& sensors) {
             }
             const auto value = variant_number(row, L"Value");
             const auto kind = companion::sensor_kind(variant_string(row, L"Identifier"));
-            if (value && kind == companion::SensorKind::Cpu) companion::take_hottest(sensors.cpu, *value);
+            if (value && kind == companion::SensorKind::Cpu &&
+                companion::absolute_temperature_name(variant_string(row, L"Name")))
+                companion::take_hottest(sensors.cpu, *value);
             if (value && kind == companion::SensorKind::Gpu) companion::take_hottest(sensors.gpu, *value);
             row->Release();
             if (std::chrono::steady_clock::now() - start > std::chrono::seconds(2)) {
