@@ -35,7 +35,7 @@ The existing Lenovo ACPI virtual power driver must be installed. [Lenovo package
 
 The app uses native C++ and Windows libraries, with no Electron, .NET runtime, temperature polling, login task or periodic idle timer. Commands share one worker and cannot overlap within the app. A single-instance guard prevents a second copy in the same Windows session.
 
-One 10.08-second idle sample on the initial laptop recorded about **17 MiB working set**, **2.2 MiB private memory**, and **0.00 CPU seconds**. These are short observations, not long-term benchmarks or guaranteed limits.
+One 10.08-second idle sample of preview 0.2 on the initial laptop recorded about **17 MiB working set**, **2.2 MiB private memory**, and **0.00 CPU seconds**. These are short observations, not long-term benchmarks or guaranteed limits.
 
 ## Limits
 
@@ -55,7 +55,7 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-Portable rule/sequence tests also build on Linux. Windows/Linux CI covers 30 diagnostic checks and 8 manual-sequence checks, a read-only report smoke test, and a device-disabled tray lifecycle check. These tests do not establish physical fan behavior on other laptops.
+Portable rule/sequence tests also build on Linux. Windows/Linux CI covers diagnostic, manual-sequence, recovery and bounded-history checks, a read-only report smoke test, and device-disabled tray/recovery lifecycle checks. These tests do not establish physical fan behavior on other laptops.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [design notes](docs/design.md). Compatibility reports should include model, BIOS, Windows version, driver version and observed behavior; omit serial numbers and full system dumps.
 
