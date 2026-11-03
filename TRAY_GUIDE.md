@@ -14,3 +14,5 @@ Keep your usual temperature monitor open when testing. Buttons and tray menu com
 Controls remain restricted to model 80NV / BIOS CDCN54WW with an existing Lenovo ACPI driver. The app is unsigned; Windows security may block it on some systems. Do not disable protections to run it.
 
 The CI `--ui-smoke-test` option exercises window/tray lifecycle with device access disabled, then exits. It is for testing only. Exit code 3 means the desktop has no accessible tray and only the window fallback was tested; code 2 means another instance prevented the UI test. The normal `--self-check` exits before any window or device access.
+
+The initial Y700 user confirmed that closing hides the window and reopening from the tray icon works. This does not establish compatibility on other models.

@@ -1,4 +1,4 @@
-name: Build diagnostics
+name: Build and preview release
 on:
   push:
   pull_request:
@@ -64,3 +64,41 @@ jobs:
       - run: cmake -S . -B build
       - run: cmake --build build
       - run: ctest --test-dir build --output-on-failure
+
+
+  publish-preview:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && contains(github.event.head_commit.message, '[release-preview-0.2]')
+    needs: [windows, portable-tests]
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PREVIEW_TAG: v0.2.0-preview.1
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download the validated build artifacts
+        shell: pwsh
+        run: |
+          gh run download $env:GITHUB_RUN_ID --name LenovoFanCompanion-manual-test-windows-x64 --dir release/tray
+          if ($LASTEXITCODE -ne 0) { throw 'Tray artifact download failed' }
+          gh run download $env:GITHUB_RUN_ID --name LenovoFanCompanion-diagnostics-windows-x64 --dir release/diagnostics
+          if ($LASTEXITCODE -ne 0) { throw 'Diagnostics artifact download failed' }
+          Copy-Item RELEASE_NOTES.md -Destination release/tray
+          New-Item -ItemType Directory -Path release/diagnostics/docs -Force | Out-Null
+          Copy-Item docs/y700-driver-investigation.md -Destination release/diagnostics/docs
+      - name: Package ZIPs and checksums
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path distribution | Out-Null
+          Compress-Archive -Path release/tray/* -DestinationPath distribution/LenovoFanCompanion-0.2.0-preview.1-windows-x64.zip
+          Compress-Archive -Path release/diagnostics/* -DestinationPath distribution/LenovoFanCompanion-diagnostics-0.2.0-preview.1-windows-x64.zip
+          $checksums = Get-ChildItem distribution/*.zip | Sort-Object Name | ForEach-Object { (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + $_.Name }
+          $checksums | Set-Content distribution/SHA256SUMS.txt -Encoding ascii
+      - name: Publish the requested prerelease
+        shell: pwsh
+        run: |
+          gh release create $env:PREVIEW_TAG distribution/LenovoFanCompanion-0.2.0-preview.1-windows-x64.zip distribution/LenovoFanCompanion-diagnostics-0.2.0-preview.1-windows-x64.zip distribution/SHA256SUMS.txt --target $env:GITHUB_SHA --prerelease --title 'Preview 0.2 - manual Y700 tray controls' --notes-file RELEASE_NOTES.md
+          if ($LASTEXITCODE -ne 0) { throw 'Preview publishing failed' }
