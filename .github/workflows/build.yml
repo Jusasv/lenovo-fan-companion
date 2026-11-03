@@ -34,6 +34,22 @@ jobs:
           name: LenovoFanCompanion-diagnostics-windows-x64
           path: preview/
           if-no-files-found: error
+      - name: Exercise manual startup without hardware commands
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath ./build/Release/LenovoFanManual.exe -ArgumentList '--self-check' -WindowStyle Hidden -PassThru
+          if (-not $process.WaitForExit(15000)) { $process.Kill(); throw 'Manual self-check timed out' }
+          if ($process.ExitCode -ne 0) { throw 'Manual startup failed' }
+      - name: Package manual test preview
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path manual-preview | Out-Null
+          Copy-Item build/Release/LenovoFanManual.exe, LICENSE, MANUAL_TEST.md, THIRD_PARTY_NOTICES.md -Destination manual-preview
+      - uses: actions/upload-artifact@v7
+        with:
+          name: LenovoFanCompanion-manual-test-windows-x64
+          path: manual-preview/
+          if-no-files-found: error
   portable-tests:
     runs-on: ubuntu-latest
     steps:
