@@ -14,7 +14,7 @@ The installer downloaded from Lenovo has a valid Lenovo Authenticode signature. 
 DD7E89227554DFCDB05282F19EC396D3CC040090ECE0A35BA892452823B564AB
 ```
 
-Windows 11 compatibility, the installed driver's availability, and whether it exposes `EnergyDrv` remain unverified. The package has not been installed during this investigation. No Lenovo installer or driver is bundled in this repository.
+After the user installed the package on the initial Windows 11 test laptop, Windows reported a healthy device and signed driver version 15.10.28.170. The EnergyDrv interface opened, and the user observed Normal reduce fan speed. This is evidence for that configuration only; general Windows 11 compatibility remains unverified. No Lenovo installer or driver is bundled in this repository.
 
 ## Next hardware checks
 
