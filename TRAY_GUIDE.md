@@ -1,4 +1,4 @@
-# Lenovo Fan Companion — tray preview 0.2
+# Lenovo Fan Companion — tray preview 0.2.1 candidate
 
 Extract the archive, then open `LenovoFanManual.exe`. Windows requests administrator approval because the existing Lenovo driver requires it. Opening the app sends no fan commands. Close any earlier manual preview before opening this version.
 
@@ -7,7 +7,7 @@ Extract the archive, then open `LenovoFanManual.exe`. Windows requests administr
 - **Close** and **Hide to tray** keep the app running in the notification area. Click its fan icon to reopen the window; right-click for controls and **Exit**. Windows may initially put the icon under the taskbar's hidden-icons arrow.
 - **Exit** stops an active test and waits for a Normal request before quitting. If Normal fails, the window opens and stays available for retry. A stuck driver, forced termination, sleep or power loss can prevent restoration; see MANUAL_TEST.md.
 
-The app uses no temperature polling or periodic background timer during normal operation. It adds no startup task and does not install a driver or change login settings. It permits one copy per Windows session. If the notification area is unavailable, the app stays visible and Close exits instead. If Explorer restarts, the icon is registered again; failure brings back the window.
+The app uses no temperature polling or periodic idle timer. A five-second warning timer runs only during a driver request; if the call remains pending, the window opens and reports an unknown fan state. This warning does not cancel or time out the driver call. It adds no startup task and does not install a driver or change login settings. It permits one copy per Windows session. If the notification area is unavailable, the app stays visible and Close exits instead. If Explorer restarts, the icon is registered again; failure brings back the window.
 
 Keep your usual temperature monitor open when testing. Buttons and tray menu commands share the same serialized worker, and concurrent mode commands are disabled. Tooltips show the latest command status, not actual fan speed. There is no RPM telemetry or automatic Quiet/Gaming mode.
 
@@ -16,3 +16,15 @@ Controls remain restricted to model 80NV / BIOS CDCN54WW with an existing Lenovo
 The CI `--ui-smoke-test` option exercises window/tray lifecycle with device access disabled, then exits. It is for testing only. Exit code 3 means the desktop has no accessible tray and only the window fallback was tested; code 2 means another instance prevented the UI test. The normal `--self-check` exits before any window or device access.
 
 The initial Y700 user confirmed that closing hides the window and reopening from the tray icon works. This does not establish compatibility on other models.
+
+## Status and session history (0.2.1 candidate)
+
+The window distinguishes requesting Boost, waiting briefly, requesting Normal, and final acceptance/failure. Acceptance describes the driver's response, not measured fan speed.
+
+If Normal fails, Boost stays blocked until a Normal request is accepted. Normal remains available for retry. Exit also attempts Normal while recovery is required and stays open on failure.
+
+The last 50 events stay in memory, with local timestamps, command results, Windows error descriptions and driver-call duration. Each event is limited to 600 characters. **Copy history** copies that session text to your clipboard only when selected. Nothing is written to disk or uploaded automatically, and there is no persistent log. Review copied text before sharing it.
+
+A five-second warning during a pending driver call shows that the request is still unresolved. It does not cancel the call or guarantee a deadline. No warning timer runs while idle.
+
+The additional CI `--recovery-smoke-test` mode simulates a failed Normal restoration, verifies that another Boost is rejected, then verifies that an accepted Normal retry unlocks Boost. Hardware access is disabled throughout this mode and the UI is marked TEST MODE. It is not a hardware compatibility test.

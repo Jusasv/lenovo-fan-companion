@@ -47,6 +47,12 @@ jobs:
           if (-not $process.WaitForExit(15000)) { $process.Kill(); throw 'Tray UI smoke check timed out' }
           if ($process.ExitCode -eq 3) { Write-Warning 'No accessible Explorer tray; window fallback tested only' }
           elseif ($process.ExitCode -ne 0) { throw 'Tray UI lifecycle check failed' }
+      - name: Exercise simulated Normal failure and retry without hardware access
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath ./build/Release/LenovoFanManual.exe -ArgumentList '--recovery-smoke-test' -WindowStyle Normal -PassThru
+          if (-not $process.WaitForExit(15000)) { $process.Kill(); throw 'Recovery UI smoke check timed out' }
+          if ($process.ExitCode -ne 0) { throw 'Recovery lockout/history check failed' }
       - name: Package manual test preview
         shell: pwsh
         run: |
