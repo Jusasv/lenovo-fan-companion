@@ -23,7 +23,7 @@ The report includes generic model and firmware information, Windows version, rel
 - **Read handle opened** means the Lenovo `EnergyDrv` endpoint can be opened for reading. No IOCTLs or mode commands are sent.
 - **Access denied / busy** leaves endpoint availability unresolved; it is not evidence of unsupported hardware.
 - **CPU temperature** comes only from an existing LibreHardwareMonitor WMI temperature sensor with a recognized CPU identifier. The hottest valid CPU sensor is shown. No ACPI thermal zone is labeled as CPU temperature.
-- **GPU temperature** prefers the installed NVIDIA NVML interface. An existing recognized LibreHardwareMonitor GPU sensor is a fallback. NVML may be unavailable on older GPUs or when the discrete GPU is asleep. Querying it may wake the GPU temporarily.
+- **GPU temperature** prefers the installed NVIDIA NVML interface. An existing recognized LibreHardwareMonitor GPU sensor is a fallback. When NVML cannot provide a reading, the installed NVIDIA NVAPI interface is queried for GPU-core temperature. Board and memory sensors are excluded. Existing monitor readings are retained if both NVIDIA interfaces fail. These queries may wake the discrete GPU temporarily.
 - **Unavailable** is not zero. Missing, invalid, and implausible readings remain unavailable.
 - These are snapshots. Freshness of an external monitor's readings is unverified, so these readings are not yet suitable for unattended quiet-mode control.
 
@@ -49,5 +49,6 @@ Quiet, Balanced, Gaming, automatic curves, tray controls, RPM telemetry, and boo
 
 - [Microsoft SetupAPI device enumeration](https://learn.microsoft.com/en-us/windows/win32/api/setupapi/nf-setupapi-setupdigetclassdevsw)
 - [Microsoft WMI C++ guidance](https://learn.microsoft.com/en-us/windows/win32/wmisdk/creating-a-wmi-application-using-c-)
+- [NVIDIA NVAPI thermal interface](https://docs.nvidia.com/nvapi/group__gputhermal.html)
 - [NVIDIA NVML temperature interface](https://docs.nvidia.com/deploy/nvml-api/latest/api/group__nvmlDeviceQueries.html)
 - [LibreHardwareMonitor WMI example](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/blob/master/LibreHardwareMonitor.Windows.Forms/TestScripts/basicwmi.py)
