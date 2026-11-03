@@ -25,6 +25,13 @@ inline std::optional<double> temperature(double value) {
     return value;
 }
 
+inline std::optional<unsigned> fan_rpm(double value) {
+    // Zero is a legitimate stopped-fan report; missing/error data must stay absent.
+    // This plausibility ceiling is not a measured or advertised fan maximum.
+    if (!std::isfinite(value) || value < 0 || value > 20000 || std::floor(value) != value) return std::nullopt;
+    return static_cast<unsigned>(value);
+}
+
 enum class SensorKind { Other, Cpu, Gpu };
 inline bool absolute_temperature_name(std::wstring_view name) {
     if (name.empty()) return false;

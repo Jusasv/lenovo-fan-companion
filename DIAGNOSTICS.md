@@ -1,4 +1,4 @@
-# Diagnostics preview 0.1
+# Diagnostics preview 0.2
 
 This build inspects local driver and sensor availability. It **does not control fans**, install a driver, apply cooling profiles, start automatically, or send data over the network.
 
@@ -24,6 +24,7 @@ The report includes generic model and firmware information, Windows version, rel
 - **Access denied / busy** leaves endpoint availability unresolved; it is not evidence of unsupported hardware.
 - **CPU temperature** comes only from an existing LibreHardwareMonitor WMI temperature sensor with a recognized CPU identifier. The hottest valid CPU sensor is shown. No ACPI thermal zone is labeled as CPU temperature.
 - **GPU temperature** prefers the installed NVIDIA NVML interface. An existing recognized LibreHardwareMonitor GPU sensor is a fallback. When NVML cannot provide a reading, the installed NVIDIA NVAPI interface is queried for GPU-core temperature. Board and memory sensors are excluded. Existing monitor readings are retained if both NVIDIA interfaces fail. These queries may wake the discrete GPU temporarily.
+- **Fan RPM snapshots** come from the existing Lenovo GameZone WMI provider on the verified 80NV / CDCN54WW target. Only GetFanCount and GetFan1Speed/GetFan2Speed are invoked after checking the provider GUID and method IDs. Administrator access is required on the initial laptop. These are firmware-reported RPM, not requested targets or independent tachometer measurements. An actual returned zero means a stopped-fan report; a failed read remains unavailable. The firmware-reported maximum is not used to clamp readings. See [fan-control capability research](docs/y700-fan-capabilities.md).
 - **Unavailable** is not zero. Missing, invalid, and implausible readings remain unavailable.
 - These are snapshots. Freshness of an external monitor's readings is unverified, so these readings are not yet suitable for unattended quiet-mode control.
 
@@ -43,7 +44,7 @@ The native app uses Windows libraries and a static C++ runtime; it does not need
 
 ## Limits
 
-Quiet, Balanced, Gaming, automatic curves, tray controls, RPM telemetry, and boost are not implemented in this diagnostic preview. It does not determine a safe temperature threshold or certify compatibility. The initial Y700 report of High-mode cycling remains an open investigation.
+Quiet, Balanced, Gaming, automatic curves, tray controls, and boost are not implemented in this diagnostic preview. It does not determine a safe temperature threshold or certify compatibility. The initial Y700 report of High-mode cycling remains an open investigation.
 
 ## Implementation references
 
