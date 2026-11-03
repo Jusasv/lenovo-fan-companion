@@ -5,10 +5,19 @@
 
 int main() {
     int failures = 0;
+    int checks = 0;
     auto check = [&](bool condition, const char* name) {
+        ++checks;
         if (!condition) { std::cerr << "FAIL: " << name << '\n'; ++failures; }
     };
     using namespace companion;
+    check(vpc_hardware_ids(L"ACPI\\VEN_VPC&DEV_2004"), "unnamed Lenovo device vendor identifier");
+    check(vpc_hardware_ids(L"ACPI\\VPC2004"), "legacy Lenovo identifier");
+    check(vpc_hardware_ids(L"*VPC2004"), "wildcard Lenovo identifier");
+    const wchar_t multiple[] = L"ACPI\\OTHER\0ACPI\\VPC2004\0\0";
+    check(vpc_hardware_ids(std::wstring_view(multiple, sizeof(multiple) / sizeof(wchar_t))), "later multi-string hardware ID matched");
+    check(!vpc_hardware_ids(L"ACPI\\VPC20040"), "different device not matched by prefix");
+    check(!vpc_hardware_ids(L""), "missing hardware IDs not recognized");
     check(temperature(46.5) == 46.5, "valid temperature is preserved");
     check(!temperature(0), "zero does not mean a cool CPU");
     check(!temperature(-1), "negative sentinel is unavailable");
@@ -34,6 +43,7 @@ int main() {
     check(hottest == 71, "hotter sensor selected");
     check(utf8(L"CPU 46\u00B0C") == "CPU 46\xC2\xB0" "C", "report degree sign UTF-8");
     check(utf8(L"\u8054\u60F3") == "\xE8\x81\x94\xE6\x83\xB3", "report international text UTF-8");
-    std::cout << (failures ? "Diagnostic rules failed\n" : "20 diagnostic checks passed\n");
+    if (failures) std::cout << "Diagnostic rules failed\n";
+    else std::cout << checks << " diagnostic checks passed\n";
     return failures ? EXIT_FAILURE : EXIT_SUCCESS;
 }

@@ -1,10 +1,24 @@
 #pragma once
 #include <cmath>
+#include <cwctype>
 #include <optional>
 #include <string>
 #include <string_view>
 
 namespace companion {
+inline bool vpc_hardware_ids(std::wstring_view identifiers) {
+    // Windows supplies a REG_MULTI_SZ list; a device without a driver may have no name.
+    for (std::size_t start = 0; start < identifiers.size();) {
+        const auto end = identifiers.find(L'\0', start);
+        auto id = std::wstring(identifiers.substr(start, end == std::wstring_view::npos ? end : end - start));
+        for (auto& character : id) character = static_cast<wchar_t>(std::towlower(character));
+        if (id == L"acpi\\ven_vpc&dev_2004" || id == L"acpi\\vpc2004" || id == L"*vpc2004") return true;
+        if (end == std::wstring_view::npos) break;
+        start = end + 1;
+    }
+    return false;
+}
+
 inline std::optional<double> temperature(double value) {
     // Reject missing, invalid and implausible readings, never convert them to zero.
     if (!std::isfinite(value) || value <= 0.0 || value > 125.0) return std::nullopt;

@@ -66,9 +66,11 @@ std::wstring lower(std::wstring value) {
 std::wstring device_string(HDEVINFO devices, SP_DEVINFO_DATA& device, DWORD property) {
     wchar_t buffer[2048]{};
     DWORD kind = 0;
+    DWORD bytes = 0;
     if (!SetupDiGetDeviceRegistryPropertyW(devices, &device, property, &kind,
-        reinterpret_cast<BYTE*>(buffer), sizeof(buffer), nullptr)) return {};
+        reinterpret_cast<BYTE*>(buffer), sizeof(buffer), &bytes)) return {};
     buffer[2047] = L'\0';
+    if (kind == REG_MULTI_SZ) return std::wstring(buffer, std::min<std::size_t>(bytes / sizeof(wchar_t), 2048));
     return buffer;
 }
 std::wstring inspect_driver(std::wostringstream& out) {
@@ -83,8 +85,8 @@ std::wstring inspect_driver(std::wostringstream& out) {
         auto name = device_string(devices, data, SPDRP_FRIENDLYNAME);
         if (name.empty()) name = device_string(devices, data, SPDRP_DEVICEDESC);
         const auto description = lower(name);
-        const auto hardware = lower(device_string(devices, data, SPDRP_HARDWAREID));
-        if (description.find(L"virtual power") == std::wstring::npos && hardware.find(L"vpc2004") == std::wstring::npos)
+        const auto hardware = device_string(devices, data, SPDRP_HARDWAREID);
+        if (description.find(L"virtual power") == std::wstring::npos && !companion::vpc_hardware_ids(hardware))
             continue;
         found = true;
         out << L"Device: " << (name.empty() ? L"Lenovo virtual power device" : name) << L"\r\n";
@@ -93,6 +95,7 @@ std::wstring inspect_driver(std::wostringstream& out) {
         if (result == CR_SUCCESS) {
             out << L"Device started: " << ((status & DN_STARTED) ? L"Yes" : L"No") << L"\r\n";
             out << L"Device problem code: " << problem << L"\r\n";
+            if (problem == CM_PROB_FAILED_INSTALL) out << L"Driver installation required (Windows Code 28)\r\n";
         } else out << L"Device state: unavailable (Config Manager " << result << L")\r\n";
         const HKEY key = SetupDiOpenDevRegKey(devices, &data, DICS_FLAG_GLOBAL, 0, DIREG_DRV, KEY_READ);
         if (key != INVALID_HANDLE_VALUE) {

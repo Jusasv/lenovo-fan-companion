@@ -19,6 +19,7 @@ The report includes generic model and firmware information, Windows version, rel
 ## What the results mean
 
 - **Device found** means Windows lists a present virtual power device. It does not prove fan-control support.
+- **Driver installation required (Windows Code 28)** means the device is present but its driver is missing. Detection includes unnamed Lenovo devices and all entries in their hardware-ID list. See the [Y700 driver investigation](docs/y700-driver-investigation.md) before selecting a driver package.
 - **Read handle opened** means the Lenovo `EnergyDrv` endpoint can be opened for reading. No IOCTLs or mode commands are sent.
 - **Access denied / busy** leaves endpoint availability unresolved; it is not evidence of unsupported hardware.
 - **CPU temperature** comes only from an existing LibreHardwareMonitor WMI temperature sensor with a recognized CPU identifier. The hottest valid CPU sensor is shown. No ACPI thermal zone is labeled as CPU temperature.
