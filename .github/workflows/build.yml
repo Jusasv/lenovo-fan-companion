@@ -40,11 +40,18 @@ jobs:
           $process = Start-Process -FilePath ./build/Release/LenovoFanManual.exe -ArgumentList '--self-check' -WindowStyle Hidden -PassThru
           if (-not $process.WaitForExit(15000)) { $process.Kill(); throw 'Manual self-check timed out' }
           if ($process.ExitCode -ne 0) { throw 'Manual startup failed' }
+      - name: Exercise tray and window lifecycle without device access
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath ./build/Release/LenovoFanManual.exe -ArgumentList '--ui-smoke-test' -WindowStyle Normal -PassThru
+          if (-not $process.WaitForExit(15000)) { $process.Kill(); throw 'Tray UI smoke check timed out' }
+          if ($process.ExitCode -eq 3) { Write-Warning 'No accessible Explorer tray; window fallback tested only' }
+          elseif ($process.ExitCode -ne 0) { throw 'Tray UI lifecycle check failed' }
       - name: Package manual test preview
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path manual-preview | Out-Null
-          Copy-Item build/Release/LenovoFanManual.exe, LICENSE, MANUAL_TEST.md, THIRD_PARTY_NOTICES.md -Destination manual-preview
+          Copy-Item build/Release/LenovoFanManual.exe, LICENSE, MANUAL_TEST.md, TRAY_GUIDE.md, THIRD_PARTY_NOTICES.md -Destination manual-preview
       - uses: actions/upload-artifact@v7
         with:
           name: LenovoFanCompanion-manual-test-windows-x64

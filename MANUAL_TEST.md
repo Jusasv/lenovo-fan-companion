@@ -16,10 +16,12 @@ Use your existing monitor for both CPU and GPU temperatures. First try **Normal 
 
 The UI reports driver acceptance or an actual Windows error code. It never presents acceptance as measured fan speed. There is no RPM telemetry, and Normal does not prove firmware control has been restored.
 
-Closing during a test requests Stop and waits for a Normal command before exiting. If Normal fails, the window remains open for retry. Synchronous driver calls can delay commands and restoration indefinitely; the three-second limit applies to the waiting period, not a stuck driver. Sleep, forced termination, crashes and power loss can prevent restoration. Test only while present, outside gaming, with temperatures visible.
+Close hides the tray preview without interrupting its short test. Use Exit from the window or tray menu to request Stop and wait for a Normal command before exiting. If Normal fails, the window remains open for retry. Synchronous driver calls can delay commands and restoration indefinitely; the three-second limit applies to the waiting period, not a stuck driver. Sleep, forced termination, crashes and power loss can prevent restoration. Test only while present, outside gaming, with temperatures visible.
 
 No driver query that changes mode for calibration is used. No automatic fan commands occur at startup. The existing diagnostics executable and its report path remain separate and read-only.
 
 The build is unsigned. If Windows Application Control blocks it, do not disable protections. Signing/distribution remains unresolved.
 
 Protocol research: [Lenovo-Fan-Control](https://github.com/jiarandiana0307/Lenovo-Fan-Control/blob/main/src/fanctrl.c). See THIRD_PARTY_NOTICES.md. No Lenovo driver is bundled.
+
+Tray preview usage: see [TRAY_GUIDE.md](TRAY_GUIDE.md).
