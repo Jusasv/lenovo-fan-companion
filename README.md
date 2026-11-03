@@ -39,7 +39,7 @@ One 10.08-second idle sample of preview 0.2 on the initial laptop recorded about
 
 ## Limits
 
-This interface does not provide arbitrary fan percentages, independent fan control or measured RPM. Driver acceptance and observed fan response are reported separately.
+The manual interface does not provide arbitrary fan percentages or independent fan control. The development diagnostics can read firmware-reported RPM on the tested target; the tray app does not display this telemetry yet. Driver acceptance, firmware telemetry and independently observed fan behavior are different facts. See [capability research](docs/y700-fan-capabilities.md) for the current manual-speed and curve investigation.
 
 The brief Boost test reuses a dust-removal command. It is **not sustained gaming cooling**. The reference utility's High mode historically cycled between fast and stopped fans on this laptop.
 

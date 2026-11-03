@@ -29,6 +29,8 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path preview | Out-Null
           Copy-Item build/Release/LenovoFanCompanion.exe, LICENSE, DIAGNOSTICS.md -Destination preview
+          New-Item -ItemType Directory -Path preview/docs | Out-Null
+          Copy-Item docs/y700-driver-investigation.md, docs/y700-fan-capabilities.md -Destination preview/docs
       - uses: actions/upload-artifact@v7
         with:
           name: LenovoFanCompanion-diagnostics-windows-x64

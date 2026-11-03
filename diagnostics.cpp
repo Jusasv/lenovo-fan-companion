@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 #include "diagnostic_rules.h"
+#include "gamezone_readonly.h"
 
 namespace {
 constexpr UINT ScanDone = WM_APP + 1;
@@ -371,7 +372,7 @@ ScanResult collect() {
     const auto os = buildNumber >= 22000 ? L"Windows 11" : (buildNumber >= 10240 ? L"Windows 10" : L"Windows (version unverified)");
     SYSTEMTIME now{};
     GetSystemTime(&now);
-    out << L"LENOVO FAN COMPANION | Diagnostics 0.1\r\n"
+    out << L"LENOVO FAN COMPANION | Diagnostics 0.2\r\n"
         << L"Read-only scan. No fan commands were sent.\r\n\r\n"
         << L"Scan time (UTC): " << now.wYear << L"-" << std::setw(2) << std::setfill(L'0') << now.wMonth
         << L"-" << std::setw(2) << now.wDay << L" " << std::setw(2) << now.wHour << L":" << std::setw(2) << now.wMinute
@@ -386,6 +387,17 @@ ScanResult collect() {
     inspect_monitor(result.sensors);
     inspect_nvml(result.sensors);
     inspect_nvapi(result.sensors);
+    const auto fans = companion::read_gamezone_fans(model, firmware);
+    out << L"FAN RPM SNAPSHOT (Lenovo firmware reports)\r\nFan 1: "
+        << (fans.first ? std::to_wstring(*fans.first) + L" RPM" : L"Unavailable")
+        << L"\r\nFan 2: " << (fans.second ? std::to_wstring(*fans.second) + L" RPM" : L"Unavailable")
+        << L"\r\nSource: Lenovo GameZone WMI; read methods only\r\nStatus: ";
+    if (!fans.eligible) out << L"Not queried; model/BIOS not in verified read scope";
+    else if (fans.error == E_ACCESSDENIED || fans.error == static_cast<HRESULT>(WBEM_E_ACCESS_DENIED))
+        out << L"Administrator access required for this provider";
+    else if (FAILED(fans.error)) out << L"Unavailable or partial snapshot: " << hex_error(fans.error);
+    else out << L"Both fan reports read successfully";
+    out << L"\r\nSnapshot only; no requested fan percentage or speed setter is inferred.\r\n\r\n";
     out << L"TEMPERATURE SNAPSHOT\r\nCPU: " << temperature_text(result.sensors.cpu)
         << L"\r\nCPU source: " << (result.sensors.cpu ? L"Existing LibreHardwareMonitor provider (hottest CPU sensor)" : L"None available")
         << L"\r\nGPU: " << temperature_text(result.sensors.gpu)
@@ -397,7 +409,7 @@ ScanResult collect() {
         << L"ACPI thermal zones are not treated as CPU temperature.\r\n\r\n"
         << L"COOLING\r\nQuiet / Balanced / Gaming profiles: not implemented in this diagnostic build.\r\n"
         << L"Sustained Boost: unverified; reference High mode reportedly cycles on the Y700.\r\n"
-        << L"No RPM or fan percentage is measured by this build.\r\n\r\n"
+        << L"RPM is firmware-reported when available; no fan percentage is measured.\r\n\r\n"
         << L"SHARING\r\nThis report omits serial numbers, user names, machine names, and full device IDs.\r\n"
         << L"Review the report before sharing. Nothing is uploaded automatically.\r\n";
     result.text = out.str();
@@ -496,7 +508,7 @@ LRESULT CALLBACK window_proc(HWND window, UINT message, WPARAM wparam, LPARAM lp
         ui->smallFont = make_font(window, 13, FW_NORMAL);
         ui->monoFont = make_font(window, 13, FW_NORMAL, L"Consolas");
         control(window, L"STATIC", L"Lenovo Fan Companion", SS_LEFT, 201, ui->titleFont);
-        ui->subtitle = control(window, L"STATIC", L"Diagnostics preview 0.1 \u00B7 Read-only", SS_LEFT, 202, ui->smallFont);
+        ui->subtitle = control(window, L"STATIC", L"Diagnostics preview 0.2 \u00B7 Read-only", SS_LEFT, 202, ui->smallFont);
         ui->laptop = control(window, L"STATIC", L"LAPTOP\r\nChecking\u2026", SS_LEFT, 203, ui->bodyFont);
         ui->cpu = control(window, L"STATIC", L"CPU\r\nUnavailable", SS_LEFT, 204, ui->bodyFont);
         ui->gpu = control(window, L"STATIC", L"GPU\r\nUnavailable", SS_LEFT, 205, ui->bodyFont);
@@ -513,7 +525,7 @@ LRESULT CALLBACK window_proc(HWND window, UINT message, WPARAM wparam, LPARAM lp
     case ScanDone: {
         std::lock_guard<std::mutex> lock(ui->mutex);
         ui->hasResult = true;
-        SetWindowTextW(ui->subtitle, L"Diagnostics preview 0.1 \u00B7 No fan settings changed \u00B7 Snapshot readings");
+        SetWindowTextW(ui->subtitle, L"Diagnostics preview 0.2 \u00B7 No fan settings changed \u00B7 Snapshot readings");
         SetWindowTextW(ui->laptop, (L"LAPTOP\r\n" + ui->result.laptop).c_str());
         SetWindowTextW(ui->driver, (L"LENOVO DRIVER\r\n" + ui->result.driverStatus).c_str());
         SetWindowTextW(ui->cpu, (L"CPU\r\n" + temperature_text(ui->result.sensors.cpu)).c_str());

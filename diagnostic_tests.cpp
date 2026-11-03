@@ -11,6 +11,14 @@ int main() {
         if (!condition) { std::cerr << "FAIL: " << name << '\n'; ++failures; }
     };
     using namespace companion;
+    check(fan_rpm(2600) == 2600u, "firmware RPM preserved");
+    check(fan_rpm(0) == 0u, "reported stopped fan is distinct from missing RPM");
+    check(!fan_rpm(-1), "negative RPM sentinel rejected");
+    check(!fan_rpm(4294967295.0), "unsigned RPM sentinel rejected");
+    check(!fan_rpm(20001), "implausible RPM rejected");
+    check(!fan_rpm(123.5), "fractional RPM response rejected");
+    check(!fan_rpm(std::numeric_limits<double>::quiet_NaN()), "NaN RPM rejected");
+    check(!fan_rpm(std::numeric_limits<double>::infinity()), "infinite RPM rejected");
     check(absolute_temperature_name(L"CPU Package"), "CPU package is an absolute temperature");
     check(absolute_temperature_name(L"CPU Core #1"), "CPU core is an absolute temperature");
     check(!absolute_temperature_name(L"CPU Core #1 Distance to TjMax"), "thermal headroom is not temperature");
